@@ -115,6 +115,19 @@ let currentId = null;
 
 // No seeded links — user adds and saves their own.
 if(!Array.isArray(links)) links=[];
+// Permanent light color per dashboard: first-saved is always light green (colorIdx 0).
+// Migrate older saves missing colorIdx — oldest created keeps 0 so green never jumps.
+(function migrateColors(){
+  const missing = links.filter(l=>typeof l.colorIdx!=='number');
+  if(missing.length){
+    missing.sort((a,b)=>String(a.created||'').localeCompare(String(b.created||'')));
+    let max = links.reduce((m,l)=>typeof l.colorIdx==='number'?Math.max(m,l.colorIdx):m,-1);
+    missing.forEach(l=>{ l.colorIdx = ++max; });
+    try{ localStorage.setItem('linkvault', JSON.stringify(links)); }catch{}
+  }
+})();
+function nextColorIdx(){ return links.reduce((m,l)=>typeof l.colorIdx==='number'?Math.max(m,l.colorIdx):m,-1)+1; }
+function colorFor(l){ const c = typeof l.colorIdx==='number' ? l.colorIdx : 0; return c===0 ? '#bbf7d0' : 'hsl('+((c*137)%360)+',75%,87%)'; }
 
 function save(){ localStorage.setItem('linkvault', JSON.stringify(links)); }
 function normUrl(u){ u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; } // keeps ?auth_token=... intact
@@ -135,7 +148,7 @@ function saveOne(url,title){
   url=normUrl(url); if(!url) return null;
   title=title.trim() || domain(url);
   let ex=links.find(l=>l.url===url); if(ex) return ex;
-  const item={id:Date.now()+Math.random(),url,title,note:'',created:new Date().toISOString()};
+  const item={id:Date.now()+Math.random(),url,title,note:'',created:new Date().toISOString(),colorIdx:nextColorIdx()};
   links.unshift(item); return item;
 }
 
@@ -154,7 +167,7 @@ function bulkAdd(){ const b=document.getElementById('bulkBox'); b.style.display=
 function saveBulk(){
   const lines=document.getElementById('bulkText').value.split('\n').map(s=>s.trim()).filter(Boolean);
   let n=0;
-  lines.forEach(u=>{ u=normUrl(u); if(u && !links.some(l=>l.url===u)){ links.unshift({id:Date.now()+Math.random()+n,url:u,title:domain(u),note:'',created:new Date().toISOString()}); n++; }});
+  lines.forEach(u=>{ u=normUrl(u); if(u && !links.some(l=>l.url===u)){ links.unshift({id:Date.now()+Math.random()+n,url:u,title:domain(u),note:'',created:new Date().toISOString(),colorIdx:nextColorIdx()+n}); n++; }});
   save(); render(); document.getElementById('bulkText').value=''; alert(n+' links added');
 }
 
@@ -166,10 +179,7 @@ function render(){
   list.innerHTML = f.length?'':'<div style="color:#6b7280;font-size:13px">No links yet.</div>';
   f.forEach((l,i)=>{
     const d=document.createElement('div'); d.className='item'+(l.id===currentId?' active':'');
-    // pastel color per dashboard: first is always light green, rest spread across hues (stable per saved order)
-    const gi = links.indexOf(l);
-    const bg = gi===0 ? '#bbf7d0' : 'hsl('+((gi*137)%360)+',75%,87%)';
-    d.style.background = bg;
+    d.style.background = colorFor(l); // always light-filled; first-saved stays light green
     d.innerHTML='<div class="meta"><div class="title"></div></div>';
     d.querySelector('.title').textContent=l.title;
     d.onclick=()=>{ view(l.id); if(window.innerWidth<850) document.getElementById('frameWrap').scrollIntoView({behavior:'smooth'}); };
@@ -207,7 +217,7 @@ function toggleTheater(force){
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleTheater(false); });
 function exportJSON(){ const b=new Blob([JSON.stringify(links,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='linkvault.json'; a.click(); }
-function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ let n=0; arr.forEach(l=>{ if(l.url && !links.some(x=>x.url===normUrl(l.url))){ links.unshift({id:Date.now()+Math.random()+n,url:normUrl(l.url),title:l.title||domain(l.url),note:'',created:new Date().toISOString()}); n++; }}); save(); render(); alert(n+' imported'); } }catch{ alert('Invalid file'); } }; r.readAsText(f); }
+function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ let n=0; arr.forEach(l=>{ if(l.url && !links.some(x=>x.url===normUrl(l.url))){ links.unshift({id:Date.now()+Math.random()+n,url:normUrl(l.url),title:l.title||domain(l.url),note:'',created:new Date().toISOString(),colorIdx:(typeof l.colorIdx==='number'?l.colorIdx:nextColorIdx()+n)}); n++; }}); save(); render(); alert(n+' imported'); } }catch{ alert('Invalid file'); } }; r.readAsText(f); }
 // init: single empty row — user taps "+ Add another link" for more
 addRow();
 // auto-open first dashboard on launch so user sees whole dashboard immediately
