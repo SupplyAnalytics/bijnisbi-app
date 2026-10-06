@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>LinkVault — Dashboard Viewer</title>
+<title>BijnisBI — Dashboard Viewer</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="icon.svg" />
@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="LinkVault" />
+<meta name="apple-mobile-web-app-title" content="BijnisBI" />
 <style>
   :root{--bg:#f6f7f9;--card:#fff;--text:#111827;--muted:#6b7280;--accent:#2563eb;--border:#e5e7eb;--radius:12px}
   *{box-sizing:border-box} html,body{height:100%}
@@ -62,7 +62,7 @@
 </head>
 <body>
 <header>
-  <div><h1>🔖 LinkVault</h1></div>
+  <div><h1>🔖 BijnisBI</h1></div>
   <div style="margin-left:auto" class="row">
     <span id="count" style="font-size:12px;color:var(--muted);align-self:center">0</span>
     <button class="ghost small" onclick="exportJSON()">Export</button>
@@ -220,7 +220,7 @@ function toggleTheater(force){
   }catch{}
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleTheater(false); });
-function exportJSON(){ const b=new Blob([JSON.stringify(links,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='linkvault.json'; a.click(); }
+function exportJSON(){ const b=new Blob([JSON.stringify(links,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='bijnisbi.json'; a.click(); }
 function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ let n=0; arr.forEach(l=>{ if(l.url && !links.some(x=>x.url===normUrl(l.url))){ links.unshift({id:Date.now()+Math.random()+n,url:normUrl(l.url),title:l.title||domain(l.url),note:'',created:new Date().toISOString(),colorIdx:(typeof l.colorIdx==='number'?l.colorIdx:nextColorIdx()+n)}); n++; }}); save(); addOpen = false; render(); alert(n+' imported'); } }catch{ alert('Invalid file'); } }; r.readAsText(f); }
 // init: single empty row — user taps "+ Add another link" for more
 addRow();

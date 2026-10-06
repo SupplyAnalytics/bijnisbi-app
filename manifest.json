@@ -1,6 +1,6 @@
 {
-  "name": "LinkVault — Dashboard Viewer",
-  "short_name": "LinkVault",
+  "name": "BijnisBI — Dashboard Viewer",
+  "short_name": "BijnisBI",
   "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
