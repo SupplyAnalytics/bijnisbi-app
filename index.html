@@ -28,15 +28,12 @@
   .row{display:flex;gap:8px} .row input{flex:1}
   #search{margin-bottom:8px}
   .list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:100px}
-  .item{border:0;border-radius:999px;padding:12px 14px;display:flex;gap:8px;align-items:center;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .item{border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:12px 14px;display:flex;gap:8px;align-items:center;color:#1f2937;font-weight:700;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08)}
   .item .meta{flex:1;min-width:0}
   .item .title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .item .url{display:none}
-  .item.c0{background:linear-gradient(135deg,#2563eb,#7c3aed)} .item.c1{background:linear-gradient(135deg,#059669,#10b981)}
-  .item.c2{background:linear-gradient(135deg,#ea580c,#f59e0b)} .item.c3{background:linear-gradient(135deg,#db2777,#8b5cf6)}
-  .item.c4{background:linear-gradient(135deg,#0891b2,#22d3ee)} .item.c5{background:linear-gradient(135deg,#4f46e5,#ec4899)}
   .item.active{outline:3px solid #111827;outline-offset:2px}
-  .item button{background:rgba(255,255,255,.25);color:#fff}
+  .item button{background:rgba(0,0,0,.08);color:#374151}
   /* Viewer — fills all remaining space */
   .viewer{padding:0;overflow:hidden;position:relative}
   .viewer-bar{display:flex;gap:6px;align-items:center;padding:10px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:#fff}
@@ -168,7 +165,11 @@ function render(){
   document.getElementById('count').textContent = links.length+' saved';
   list.innerHTML = f.length?'':'<div style="color:#6b7280;font-size:13px">No links yet.</div>';
   f.forEach((l,i)=>{
-    const d=document.createElement('div'); d.className='item c'+(i%6)+(l.id===currentId?' active':'');
+    const d=document.createElement('div'); d.className='item'+(l.id===currentId?' active':'');
+    // pastel color per dashboard: first is always light green, rest spread across hues (stable per saved order)
+    const gi = links.indexOf(l);
+    const bg = gi===0 ? '#bbf7d0' : 'hsl('+((gi*137)%360)+',75%,87%)';
+    d.style.background = bg;
     d.innerHTML='<div class="meta"><div class="title"></div></div>';
     d.querySelector('.title').textContent=l.title;
     d.onclick=()=>{ view(l.id); if(window.innerWidth<850) document.getElementById('frameWrap').scrollIntoView({behavior:'smooth'}); };
