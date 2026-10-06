@@ -28,10 +28,15 @@
   .row{display:flex;gap:8px} .row input{flex:1}
   #search{margin-bottom:8px}
   .list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:100px}
-  .item{border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff;display:flex;gap:8px;align-items:center}
-  .item.active{outline:2px solid var(--accent)} .item .meta{flex:1;min-width:0}
-  .item .title{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .item .url{font-size:11px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item{border:0;border-radius:999px;padding:12px 14px;display:flex;gap:8px;align-items:center;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .item .meta{flex:1;min-width:0}
+  .item .title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .url{display:none}
+  .item.c0{background:linear-gradient(135deg,#2563eb,#7c3aed)} .item.c1{background:linear-gradient(135deg,#059669,#10b981)}
+  .item.c2{background:linear-gradient(135deg,#ea580c,#f59e0b)} .item.c3{background:linear-gradient(135deg,#db2777,#8b5cf6)}
+  .item.c4{background:linear-gradient(135deg,#0891b2,#22d3ee)} .item.c5{background:linear-gradient(135deg,#4f46e5,#ec4899)}
+  .item.active{outline:3px solid #111827;outline-offset:2px}
+  .item button{background:rgba(255,255,255,.25);color:#fff}
   /* Viewer — fills all remaining space */
   .viewer{padding:0;overflow:hidden;position:relative}
   .viewer-bar{display:flex;gap:6px;align-items:center;padding:10px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:#fff}
@@ -39,7 +44,7 @@
   #frameWrap{flex:1;position:relative;background:#fff;min-height:0}
   iframe#frame{width:100%;height:100%;border:0;display:block;background:#fff}
   #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:24px;line-height:1.6}
-  #currentUrl{padding:6px 12px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--border)}
+  #currentUrl{display:none}
   /* Full-dashboard theater mode — whole screen, for iOS/Android */
   #frameWrap.theater{position:fixed;inset:0;z-index:50;border-radius:0}
   #frameWrap.theater iframe#frame{height:100dvh}
@@ -162,11 +167,10 @@ function render(){
   const f=links.filter(l=>(l.title+' '+l.url).toLowerCase().includes(q));
   document.getElementById('count').textContent = links.length+' saved';
   list.innerHTML = f.length?'':'<div style="color:#6b7280;font-size:13px">No links yet.</div>';
-  f.forEach(l=>{
-    const d=document.createElement('div'); d.className='item'+(l.id===currentId?' active':'');
-    d.innerHTML='<div class="meta"><div class="title"></div><div class="url"></div></div>';
+  f.forEach((l,i)=>{
+    const d=document.createElement('div'); d.className='item c'+(i%6)+(l.id===currentId?' active':'');
+    d.innerHTML='<div class="meta"><div class="title"></div></div>';
     d.querySelector('.title').textContent=l.title;
-    d.querySelector('.url').textContent=l.url;
     d.onclick=()=>{ view(l.id); if(window.innerWidth<850) document.getElementById('frameWrap').scrollIntoView({behavior:'smooth'}); };
     const x=document.createElement('button'); x.textContent='×'; x.className='danger small';
     x.onclick=e=>{e.stopPropagation(); links=links.filter(v=>v.id!==l.id); if(currentId===l.id) clearView(); save(); render();};
@@ -203,8 +207,8 @@ function toggleTheater(force){
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleTheater(false); });
 function exportJSON(){ const b=new Blob([JSON.stringify(links,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='linkvault.json'; a.click(); }
 function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ let n=0; arr.forEach(l=>{ if(l.url && !links.some(x=>x.url===normUrl(l.url))){ links.unshift({id:Date.now()+Math.random()+n,url:normUrl(l.url),title:l.title||domain(l.url),note:'',created:new Date().toISOString()}); n++; }}); save(); render(); alert(n+' imported'); } }catch{ alert('Invalid file'); } }; r.readAsText(f); }
-// init multi rows (3 empty, referencing seeded format)
-addRow(); addRow(); addRow();
+// init: single empty row — user taps "+ Add another link" for more
+addRow();
 // auto-open first dashboard on launch so user sees whole dashboard immediately
 if(links.length && !currentId) view(links[0].id);
 render();
