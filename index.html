@@ -46,6 +46,11 @@
   #frameWrap.theater iframe#frame{height:100dvh}
   #exitTheater{display:none;position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:51;border-radius:999px;padding:12px 22px;box-shadow:0 4px 20px rgba(0,0,0,.3)}
   #frameWrap.theater ~ #exitTheater{display:block}
+  .zoom{display:flex;gap:2px;align-items:center;background:#f1f5f9;border-radius:999px;padding:2px 4px}
+  .zoom button{padding:6px 10px;font-size:13px;background:transparent;color:var(--text)}
+  #zoomLabel{min-width:46px;text-align:center;font-size:12px;color:var(--muted);cursor:pointer}
+  body.wide .wrap{grid-template-columns:1fr;max-width:none}
+  body.wide #sideCol{display:none}
   .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
   /* Mobile: tabs — list on top, dashboard fills rest */
   @media(max-width:850px){
@@ -67,7 +72,7 @@
 </header>
 
 <div class="wrap">
-  <div class="card">
+  <div class="card" id="sideCol">
     <div id="addSection">
     <label style="margin-top:0">Dashboard links — add one or many</label>
     <div id="formatRef" class="hint" style="margin:0 0 8px">Format ref:<br/><code style="word-break:break-all">https://link-hub.bijnis.com/dashboard/p/YOUR_ID/?auth_token=YOUR_TOKEN</code><br/>Paste full link including <code>?auth_token=</code> so whole dashboard opens.</div>
@@ -84,6 +89,8 @@
   <div class="card viewer">
     <div class="viewer-bar">
       <strong id="viewTitle">No dashboard selected</strong>
+      <span class="zoom"><button onclick="zoomBy(-0.1)" title="Zoom out">−</button><span id="zoomLabel" onclick="zoomReset()" title="Reset to 100%">100%</span><button onclick="zoomBy(0.1)" title="Zoom in">+</button></span>
+      <button class="small ghost" onclick="toggleWide()" title="Hide list for bigger dashboard">⇔</button>
       <button class="small ghost" onclick="reloadFrame()" title="Reload">⟳</button>
       <button class="small ghost" onclick="toggleTheater()" title="Fullscreen">⛶ Full</button>
       <button class="small ghost" onclick="openCurrent()">Open ↗</button>
@@ -193,6 +200,12 @@ function view(id){
 function clearView(){ currentId=null; document.getElementById('frame').removeAttribute('src'); document.getElementById('frame').src='about:blank'; document.getElementById('empty').style.display='flex'; document.getElementById('viewTitle').textContent='No dashboard selected'; document.getElementById('currentUrl').textContent=''; }
 function getCurrent(){ return links.find(x=>x.id===currentId); }
 function reloadFrame(){ const l=getCurrent(); if(l) document.getElementById('frame').src=l.url; }
+// Dashboard size fix: zoom (some dashboards render small/large inside the frame)
+let zoom = parseFloat(localStorage.getItem('linkvault_zoom')||'1') || 1;
+function applyZoom(){ zoom=Math.min(2,Math.max(0.5,Math.round(zoom*100)/100)); document.getElementById('frame').style.zoom=zoom; document.getElementById('zoomLabel').textContent=Math.round(zoom*100)+'%'; try{localStorage.setItem('linkvault_zoom',zoom);}catch{} }
+function zoomBy(d){ zoom+=d; applyZoom(); }
+function zoomReset(){ zoom=1; applyZoom(); }
+function toggleWide(){ document.body.classList.toggle('wide'); }
 function openCurrent(){ const l=getCurrent(); if(l) window.open(l.url,'_blank','noopener'); }
 function deleteCurrent(){ if(!currentId) return; links=links.filter(x=>x.id!==currentId); document.getElementById('frameWrap').classList.remove('theater'); clearView(); save(); render(); }
 function toggleTheater(force){
@@ -213,6 +226,7 @@ function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new Fi
 addRow();
 // auto-open first dashboard on launch so user sees whole dashboard immediately
 if(links.length && !currentId) view(links[0].id);
+applyZoom();
 render();
 // register SW for installable app (needs http, silently fails on file://)
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
