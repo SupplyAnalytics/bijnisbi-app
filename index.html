@@ -73,16 +73,8 @@
     <label style="margin-top:0">Dashboard links — add one or many</label>
     <div id="formatRef" class="hint" style="margin:0 0 8px">Format ref:<br/><code style="word-break:break-all">https://link-hub.bijnis.com/dashboard/p/YOUR_ID/?auth_token=YOUR_TOKEN</code><br/>Paste full link including <code>?auth_token=</code> so whole dashboard opens.</div>
     <div id="multiForm" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div class="row" style="margin-top:8px">
-      <button class="ghost small" style="flex:1" onclick="addRow()">+ Add another link</button>
-      <button class="ghost small" style="flex:1" onclick="bulkAdd()">Bulk paste</button>
-    </div>
-    <div style="margin-top:10px"><button class="big" onclick="saveAllAndOpen()">💾 Save all &amp; Open dashboards</button></div>
-    <div id="bulkBox" style="display:none">
-      <label>Paste many links (one per line)</label>
-      <textarea id="bulkText" rows="4" placeholder="https://link1...&#10;https://link2..."></textarea>
-      <div style="margin-top:8px"><button class="small" onclick="saveBulk()">Save all</button></div>
-    </div>
+    <div style="margin-top:8px"><button class="ghost small" style="width:100%" onclick="addRow()">+ Add another link</button></div>
+    <div style="margin-top:10px"><button class="big" onclick="saveLinks()">💾 Save</button></div>
     </div>
     <button id="addToggle" class="ghost" style="display:none;margin-bottom:8px" onclick="showAddForm()">＋ Add another dashboard</button>
     <label>Saved links</label>
@@ -99,7 +91,7 @@
       <button class="small danger" onclick="deleteCurrent()">✕</button>
     </div>
     <div id="frameWrap">
-      <div id="empty">Paste a dashboard link on the left<br/>and tap <b>Save &amp; Open Dashboard</b>.<br/><br/>The whole dashboard loads here,<br/>edge-to-edge.<br/><br/><span style="font-size:12px">If a dashboard blocks embedding,<br/>use <b>Open ↗</b> (opens full site).</span></div>
+      <div id="empty">Paste a dashboard link on the left<br/>and tap <b>Save</b>, then tap its button.<br/><br/>The whole dashboard loads here,<br/>edge-to-edge.<br/><br/><span style="font-size:12px">If a dashboard blocks embedding,<br/>use <b>Open ↗</b> (opens full site).</span></div>
       <iframe id="frame"
         allow="fullscreen; autoplay; clipboard-write; geolocation; camera; microphone; payment"
         allowfullscreen
@@ -150,7 +142,7 @@ function addRow(url='',title=''){
   d.innerHTML='<input class="rUrl" placeholder="https://link-hub.bijnis.com/dashboard/p/.../?auth_token=..." inputmode="url" style="flex:2"/><input class="rTitle" placeholder="Title" style="flex:1"/><button class="danger small">×</button>';
   d.querySelector('.rUrl').value=url; d.querySelector('.rTitle').value=title;
   d.querySelector('button').onclick=()=>{ d.remove(); if(!box.children.length) addRow(); };
-  d.querySelector('.rUrl').addEventListener('keydown',e=>{ if(e.key==='Enter') saveAllAndOpen(); });
+  d.querySelector('.rUrl').addEventListener('keydown',e=>{ if(e.key==='Enter') saveLinks(); });
   box.appendChild(d);
 }
 function addLink(){ const rows=getRows(); if(!rows.length) return alert('Paste at least one dashboard link'); const r=rows[0]; return saveOne(r.url, r.title); }
@@ -162,24 +154,10 @@ function saveOne(url,title){
   links.unshift(item); return item;
 }
 
-// Main flow: save ALL filled links + immediately show WHOLE dashboards
-function saveAllAndOpen(){ legacyBulkToRows(); const rows=getRows(); if(!rows.length) return alert('Paste at least one dashboard link');
-  let n=0, first=null;
-  rows.forEach(r=>{ const before=links.length; const it=saveOne(r.url,r.title); if(links.length!==before||it) n++; if(!first) first=it; r.row.querySelector('.rUrl').value=''; r.row.querySelector('.rTitle').value=''; });
-  save(); render(); if(first) view(first.id);
-  addOpen = false; render(); // collapse add form — dashboard button present, ref no longer needed
-  document.getElementById('frameWrap').scrollIntoView({behavior:'smooth',block:'start'});
-  if(window.innerWidth<850) toggleTheater(true);
-}
-function saveAndOpen(){ saveAllAndOpen(); }
-function legacyBulkToRows(){ const t=document.getElementById('bulkText'); if(t&&t.value.trim()){ t.value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(u=>addRow(u,'')); t.value=''; } }
-
-function bulkAdd(){ const b=document.getElementById('bulkBox'); b.style.display=b.style.display==='none'?'block':'none'; }
-function saveBulk(){
-  const lines=document.getElementById('bulkText').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  let n=0;
-  lines.forEach(u=>{ u=normUrl(u); if(u && !links.some(l=>l.url===u)){ links.unshift({id:Date.now()+Math.random()+n,url:u,title:domain(u),note:'',created:new Date().toISOString(),colorIdx:nextColorIdx()+n}); n++; }});
-  save(); addOpen = false; render(); document.getElementById('bulkText').value=''; alert(n+' links added');
+// Save filled rows as dashboard buttons (save only — tap a button to open it)
+function saveLinks(){ const rows=getRows(); if(!rows.length) return alert('Paste at least one dashboard link');
+  rows.forEach(r=>{ saveOne(r.url,r.title); r.row.querySelector('.rUrl').value=''; r.row.querySelector('.rTitle').value=''; });
+  save(); addOpen = false; render(); // collapse add form — dashboard button present, ref no longer needed
 }
 
 function render(){
