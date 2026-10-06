@@ -69,8 +69,9 @@
 
 <div class="wrap">
   <div class="card">
+    <div id="addSection">
     <label style="margin-top:0">Dashboard links — add one or many</label>
-    <div class="hint" style="margin:0 0 8px">Format ref:<br/><code style="word-break:break-all">https://link-hub.bijnis.com/dashboard/p/YOUR_ID/?auth_token=YOUR_TOKEN</code><br/>Paste full link including <code>?auth_token=</code> so whole dashboard opens.</div>
+    <div id="formatRef" class="hint" style="margin:0 0 8px">Format ref:<br/><code style="word-break:break-all">https://link-hub.bijnis.com/dashboard/p/YOUR_ID/?auth_token=YOUR_TOKEN</code><br/>Paste full link including <code>?auth_token=</code> so whole dashboard opens.</div>
     <div id="multiForm" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="row" style="margin-top:8px">
       <button class="ghost small" style="flex:1" onclick="addRow()">+ Add another link</button>
@@ -82,10 +83,11 @@
       <textarea id="bulkText" rows="4" placeholder="https://link1...&#10;https://link2..."></textarea>
       <div style="margin-top:8px"><button class="small" onclick="saveBulk()">Save all</button></div>
     </div>
+    </div>
+    <button id="addToggle" class="ghost" style="display:none;margin-bottom:8px" onclick="showAddForm()">＋ Add another dashboard</button>
     <label>Saved links</label>
     <input id="search" placeholder="🔍 Search..." oninput="render()" />
     <div class="list" id="list"></div>
-    <div class="hint">Tap a link → full dashboard opens on the right / below. Tap <b>⛶ Full</b> for edge-to-edge view on phone. Install: phone browser menu → <b>Add to Home Screen</b>.</div>
   </div>
 
   <div class="card viewer">
@@ -112,6 +114,14 @@
 let links = [];
 try { links = JSON.parse(localStorage.getItem('linkvault') || '[]'); } catch { links = []; }
 let currentId = null;
+let addOpen = false; // add-form visible? auto-collapses once a dashboard is saved
+function showAddForm(){
+  addOpen = true;
+  document.getElementById('addSection').style.display='block';
+  document.getElementById('addToggle').style.display='none';
+  if(!document.querySelectorAll('#multiForm .linkRow').length) addRow();
+  const inp = document.querySelector('#multiForm .rUrl'); if(inp) inp.focus();
+}
 
 // No seeded links — user adds and saves their own.
 if(!Array.isArray(links)) links=[];
@@ -157,6 +167,7 @@ function saveAllAndOpen(){ legacyBulkToRows(); const rows=getRows(); if(!rows.le
   let n=0, first=null;
   rows.forEach(r=>{ const before=links.length; const it=saveOne(r.url,r.title); if(links.length!==before||it) n++; if(!first) first=it; r.row.querySelector('.rUrl').value=''; r.row.querySelector('.rTitle').value=''; });
   save(); render(); if(first) view(first.id);
+  addOpen = false; render(); // collapse add form — dashboard button present, ref no longer needed
   document.getElementById('frameWrap').scrollIntoView({behavior:'smooth',block:'start'});
   if(window.innerWidth<850) toggleTheater(true);
 }
@@ -168,7 +179,7 @@ function saveBulk(){
   const lines=document.getElementById('bulkText').value.split('\n').map(s=>s.trim()).filter(Boolean);
   let n=0;
   lines.forEach(u=>{ u=normUrl(u); if(u && !links.some(l=>l.url===u)){ links.unshift({id:Date.now()+Math.random()+n,url:u,title:domain(u),note:'',created:new Date().toISOString(),colorIdx:nextColorIdx()+n}); n++; }});
-  save(); render(); document.getElementById('bulkText').value=''; alert(n+' links added');
+  save(); addOpen = false; render(); document.getElementById('bulkText').value=''; alert(n+' links added');
 }
 
 function render(){
@@ -176,6 +187,11 @@ function render(){
   const list=document.getElementById('list');
   const f=links.filter(l=>(l.title+' '+l.url).toLowerCase().includes(q));
   document.getElementById('count').textContent = links.length+' saved';
+  // Once a dashboard button exists, hide the format ref + collapse the add form
+  const has = links.length>0;
+  document.getElementById('formatRef').style.display = has ? 'none' : 'block';
+  if(!has || addOpen){ document.getElementById('addSection').style.display='block'; document.getElementById('addToggle').style.display='none'; }
+  else { document.getElementById('addSection').style.display='none'; document.getElementById('addToggle').style.display='block'; }
   list.innerHTML = f.length?'':'<div style="color:#6b7280;font-size:13px">No links yet.</div>';
   f.forEach((l,i)=>{
     const d=document.createElement('div'); d.className='item'+(l.id===currentId?' active':'');
@@ -217,7 +233,7 @@ function toggleTheater(force){
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleTheater(false); });
 function exportJSON(){ const b=new Blob([JSON.stringify(links,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='linkvault.json'; a.click(); }
-function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ let n=0; arr.forEach(l=>{ if(l.url && !links.some(x=>x.url===normUrl(l.url))){ links.unshift({id:Date.now()+Math.random()+n,url:normUrl(l.url),title:l.title||domain(l.url),note:'',created:new Date().toISOString(),colorIdx:(typeof l.colorIdx==='number'?l.colorIdx:nextColorIdx()+n)}); n++; }}); save(); render(); alert(n+' imported'); } }catch{ alert('Invalid file'); } }; r.readAsText(f); }
+function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ let n=0; arr.forEach(l=>{ if(l.url && !links.some(x=>x.url===normUrl(l.url))){ links.unshift({id:Date.now()+Math.random()+n,url:normUrl(l.url),title:l.title||domain(l.url),note:'',created:new Date().toISOString(),colorIdx:(typeof l.colorIdx==='number'?l.colorIdx:nextColorIdx()+n)}); n++; }}); save(); addOpen = false; render(); alert(n+' imported'); } }catch{ alert('Invalid file'); } }; r.readAsText(f); }
 // init: single empty row — user taps "+ Add another link" for more
 addRow();
 // auto-open first dashboard on launch so user sees whole dashboard immediately
