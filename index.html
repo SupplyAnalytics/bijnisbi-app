@@ -28,11 +28,12 @@
   .row{display:flex;gap:8px} .row input{flex:1}
   #search{margin-bottom:8px}
   .list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:100px}
-  .item{border:2px solid rgba(255,255,255,.8);border-radius:0;padding:12px 18px;display:flex;gap:8px;align-items:center;color:#1f2937;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+  .item{position:relative;border:2px solid rgba(255,255,255,.8);border-radius:0;padding:12px 18px;display:flex;gap:8px;align-items:center;color:#1f2937;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.1)}
   .item .meta{flex:1;min-width:0}
   .item .title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .item .url{display:none}
   .item.active{outline:3px solid #111827;outline-offset:2px}
+  .item .del{position:absolute;top:-11px;right:-11px;width:24px;height:24px;border-radius:50%;background:#fee2e2;color:#b91c1c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:13px;line-height:1;padding:0;flex-shrink:0}
   /* Viewer — fills all remaining space */
   .viewer{padding:0;overflow:hidden;position:relative}
   .viewer-bar{display:flex;gap:6px;align-items:center;padding:10px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:#fff}
@@ -183,7 +184,9 @@ function render(){
     d.innerHTML='<div class="meta"><div class="title"></div></div>';
     d.querySelector('.title').textContent=l.title;
     d.onclick=()=>{ view(l.id); if(window.innerWidth<850) document.getElementById('frameWrap').scrollIntoView({behavior:'smooth'}); };
-    list.appendChild(d);
+    const x=document.createElement('button'); x.textContent='×'; x.className='del'; x.title='Delete dashboard';
+    x.onclick=e=>{e.stopPropagation(); if(confirm('Delete "'+l.title+'"?')){ links=links.filter(v=>v.id!==l.id); if(currentId===l.id) clearView(); save(); render(); }};
+    d.appendChild(x); list.appendChild(d);
   });
 }
 
